@@ -1,0 +1,255 @@
+---
+title: "co_expression"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(stringsAsFactors = F)
+library(tidyverse)
+library(WGCNA)
+library(tximport)
+library(DESeq2)
+library(biomaRt)
+```
+
+```{r data}
+# RNA-seq samples
+#samples <- read_delim('/groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/000.general_data/samples.txt', delim = '\t')
+
+# araport11
+#Araport11 <- read.table('/groups/nordborg/user/pieter.clauw/Documents/Source/Araport11/Araport11_GFF3_genes_transposons.201606.ChrM_ChrC_FullName.gtf', sep = '\t')
+
+# gene description
+ensembl <- useMart(biomart="plants_mart", host="plants.ensembl.org", dataset="athaliana_eg_gene")
+
+# expression estimaes - variance stabilised
+expression <- read_csv('/groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/001.transcript_quantification/transcriptCounts_varianceStabilised.csv') %>%
+  mutate(accession = as.factor(accession))
+
+# gene categories Sonia
+gene_cat <- read_delim('/groups/nordborg/user/pieter.clauw/Documents/Experiments/UltimateQandD/Results/Transcriptome/diffExpr_Sonia/Category_genes.txt', delim = '\t')
+
+# output directory
+out.dir <- '/groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/003.coExpression/003.results/'
+```
+```{r functions}
+# filter genes with too many missing data and/or zero variance
+geneFilter <- function(exprData)
+{
+  gsg <- goodSamplesGenes(exprData, verbose = 3)
+  if (!gsg$allOK)
+  {
+    # Optionally, print the gene and sample names that were removed:
+    if (sum(!gsg$goodGenes)>0)
+    {printFlush(paste("Removing genes:", paste(names(expr6C)[!gsg$goodGenes], collapse = ", ")))}
+    if (sum(!gsg$goodSamples)>0)
+    {printFlush(paste("Removing samples:", paste(rownames(expr6C)[!gsg$goodSamples], collapse = ", ")))}
+    # Remove the offending genes and samples from the data:
+    return(exprData[gsg$goodSamples, gsg$goodGenes])
+  }
+  else
+  {return(exprData)}
+}
+
+# plot the scale-free topology fit index as functio of soft threshold power
+plotSoftThresholdChoices <- function(exprData, minSofthThreshold = 12, maxSoftThreshold = 20, steps = 2)
+{
+  # Choose a set of soft-thresholding powers
+  powers <- c(c(1:10), seq(from = minSofthThreshold, to = maxSoftThreshold, by = steps))
+  # Call the network topology analysis function
+  sft <- pickSoftThreshold(exprData, powerVector = powers, verbose = 5)
+  # Plot the results:
+  sizeGrWindow(9, 5)
+  par(mfrow = c(1,2));
+  cex1 = 0.9;
+  # Scale-free topology fit index as a function of the soft-thresholding power
+  plot(sft$fitIndices[,1], -sign(sft$fitIndices[,3])*sft$fitIndices[,2],
+       xlab="Soft Threshold (power)",ylab="Scale Free Topology Model Fit,signed R^2",type="n",
+       main = paste("Scale independence"));
+  text(sft$fitIndices[,1], -sign(sft$fitIndices[,3])*sft$fitIndices[,2],
+       labels=powers,cex=cex1,col="red");
+  # this line corresponds to using an R^2 cut-off of h
+  abline(h=0.90,col="red")
+  # Mean connectivity as a function of the soft-thresholding power
+  plot(sft$fitIndices[,1], sft$fitIndices[,5],
+       xlab="Soft Threshold (power)",ylab="Mean Connectivity", type="n",
+       main = paste("Mean connectivity"))
+  text(sft$fitIndices[,1], sft$fitIndices[,5], labels=powers, cex=cex1,col="red")
+}
+```
+
+
+```{r prepare}
+# filter only sequenced samples
+#samples <- filter(samples, Selected == 'yes') %>%
+#  mutate(temperature = as.factor(temperature),
+#         replicate = as.factor(replicate),
+#         experiment = as.factor(paste(temperature, replicate, sep = '_')),
+#         ID = paste(tray, tray_coordinate, temperature, replicate, sep = '_'),
+#         sampleName = paste(accession, temperature, replicate, sep = '_')) %>%
+#  mutate(accession = as.factor(accession))
+
+# Araport11 GTF
+#colnames(Araport11) <- c('chr', 'source', 'feature', 'start', 'end', 'score', 'strand', 'frame', 'attributes')
+#Araport11$attributes <- as.character(Araport11$attributes)
+#Araport11[,9:10] <- str_split_fixed(Araport11$attributes, ';', 3)[,1:2]
+#Araport11$V10 <- sub(".*id ", "", Araport11$V10)
+
+```
+
+## Network over both temperatures
+```{r filter genes}
+expression.mtrx <- expression %>%
+  dplyr::select(matches('AT.G.{5}')) %>%
+  as.matrix()
+
+# filter out genes with expression data for less than 1/2 samples
+# and filter out genes with variance == 0
+expression.mtrx.filtered <- geneFilter(expression.mtrx)
+
+# select only genes with differential expression (genotype effect or temperature effect or GxE)
+expression.mtrx.filtered <- expression.mtrx.filtered[, gene_cat$genes[which(gene_cat$genes %in% colnames(expression.mtrx.filtered))]]
+rownames(expression.mtrx.filtered) <- pull(expression, sample)
+
+expression.filtered <- expression %>%
+  dplyr::select(-matches('AT.G.{5}')) %>%
+  add_column(., as_tibble(expression.mtrx.filtered))
+```
+
+```{r PCA on subset of genes}
+# PCA plot
+pcaData<- prcomp(expression.mtrx.filtered)
+percentage <- round(pcaData$sdev / sum(pcaData$sdev) * 100, 2)
+percentage <- paste(colnames(pcaData$x), "(", paste( as.character(percentage), "%", ")", sep="") )
+
+as_tibble(pcaData$x, rownames = 'sample') %>%
+  left_join(., dplyr::select(expression, sample, accession, temperature, replicate), by = 'sample') %>%
+  ggplot(aes(PC1, PC2, color = temperature, shape = accession)) +
+  geom_point(size = 3) +
+  scale_shape_manual(values=c(15, 19, 17, 18, 4, 8, 9, 11)) +
+  labs(x = percentage[1],
+       y = percentage[2])
+```
+```{r make list framework for WGCNA analysis}
+wgcna.data <- list()
+wgcna.data$expression <- expression.mtrx.filtered
+```
+
+```{r test soft threshold}
+plotSoftThresholdChoices(wgcna.data$expression, maxSoftThreshold = 20)
+```
+A soft threhsold of 8 was picked.
+This soft threshold has a scale free topology model fit above 0.8 and still a mean connectivity of 81.8
+```{r choose softThreshold}
+wgcna.data$softThreshold <- 8
+```
+
+```{r adjacencies}
+wgcna.data$adjacency <- abs(bicor(wgcna.data$expression, use = "p", maxPOutliers = 0.10))^wgcna.data$softThreshold 
+```
+## calculating topological overlap matrices
+Warning: This step is memory heavy.
+Sometimes R gives an error: vector memory exhausted (limit reached?)
+Memory allocated to R in Rstudio can be increased.
+Instructions:
+in console:
+touch .Renviron
+open .Renviron
+
+add to this file:
+R_MAX_VSIZE=20Gb
+
+20Gb was succesful on a 16Gb mac.
+Restart Rstudio
+
+```{r TOM}
+wgcna.data$TOM <- TOMsimilarity(wgcna.data$adjacency)
+# prevent too much memory usage by not saving the dissimilarity matrix but create it when needed with 1-TOM
+#expr.filter[[i]]$dissTOM <- 1 - expr.filter[[i]]$TOM
+```
+
+
+```{r dendrogram}
+collectGarbage()
+wgcna.data$geneTree <- hclust(as.dist(1- wgcna.data$TOM), method = "average")
+sizeGrWindow(12,9)
+plot(wgcna.data$geneTree, xlab="", sub="", main = "Gene clustering on TOM-based dissimilarity", labels = FALSE, hang = 0.04)
+```
+
+```{r get modules}
+minModuleSize <- 10
+wgcna.data$dynamicMods <- cutreeDynamic(dendro = wgcna.data$geneTree, distM = 1 - wgcna.data$TOM, deepSplit = 1, pamRespectsDendro = FALSE, minClusterSize = minModuleSize)
+table(wgcna.data$dynamicMods)
+```
+
+```{r size distribution unmerged}
+hist(table(wgcna.data$dynamicMods), main = 'Modules size before merging', breaks = 250, col= 'blue')
+```
+
+```{r plot modules}
+wgcna.data$dynamicColors <- labels2colors(wgcna.data$dynamicMods)
+sizeGrWindow(8,6)
+plotDendroAndColors(wgcna.data$geneTree, wgcna.data$dynamicColors, "Dynamic Tree Cut", dendroLabels = FALSE, hang = 0.03, addGuide = TRUE, guideHang = 0.05, main = "Gene dendrogram and module colors")
+```
+
+```{r decide level to merge}
+###calculate eigengenes
+MEList <- moduleEigengenes(wgcna.data$expression, colors=  wgcna.data$dynamicMods, softPower = wgcna.data$softThreshold)
+MEs <- MEList$eigengenes
+# Calculate dissimilarity of module eigengenes
+MEDiss = 1-cor(MEs)
+# Cluster module eigengenes
+METree = hclust(as.dist(MEDiss), method = "average")
+# Plot the result
+sizeGrWindow(7, 6)
+plot(METree, main = "Clustering of module eigengenes", xlab = "", sub = "", cex=0.3)
+
+  
+MEDissThres <- 0.20
+# Plot the cut line into the dendrogram
+abline(h=MEDissThres, col = "red")
+
+```
+```{r merge similar clusters}
+#this step is different comparing to the tutorial for set-specific network construction and it's taken from the tutorial for consensus as it seems to work better (with the first one the moduleLabels it's not giving the same number of modules as the moduleColors, don't know why)
+
+merge <- mergeCloseModules(wgcna.data$expression, wgcna.data$dynamicMods, cutHeight = MEDissThres, verbose = 3)
+# The merged module labels
+wgcna.data$mergedLabels <- merge$colors
+# translate into module colors
+wgcna.data$mergedColors <- labels2colors(wgcna.data$mergedLabels)
+# Eigengenes of the new merged modules
+wgcna.data$MEs <- merge$newMEs
+sizeGrWindow(12, 9)
+plotDendroAndColors(wgcna.data$geneTree, cbind(wgcna.data$dynamicColors, wgcna.data$mergedColors), c("Dynamic Tree Cut", "Merged dynamic"), dendroLabels = FALSE, hang = 0.03, addGuide = TRUE, guideHang = 0.05, main = 'Modules after merging')
+table(wgcna.data$mergedLabels)
+length(unique(wgcna.data$mergedLabels))  
+```
+
+
+```{r size distribution merged}
+hist(table(wgcna.data$mergedColors), main = 'Modules size after merging', breaks = 250, col = 'red')
+```
+
+
+
+```{r export network to cytoscape}
+gene.names <- getBM(attributes = 'external_gene_name', filters = 'ensembl_gene_id', values = colnames(wgcna.data$expression), mart =ensembl)
+gene.attributes <- tibble(gene = colnames(wgcna.data$expression)) %>%
+  left_join(., gene_cat, by = c('gene' = 'genes'))
+
+# define threshold
+trsh = 0.2
+
+# export network
+exportNetworkToCytoscape(wgcna.data$TOM,
+                         edgeFile = paste0(out.dir, 'network_16C_6C_full_edge_', trsh, '.txt'),
+                         nodeFile = paste0(out.dir, 'network_16C_6C_full_node_', trsh, '.txt'),
+                         weighted = T,
+                         threshold = trsh,
+                         nodeNames = colnames(wgcna.data$expression),
+                         altNodeNames = gene.names$external_gene_name,
+                         nodeAttr = gene.attributes)
+```
+
