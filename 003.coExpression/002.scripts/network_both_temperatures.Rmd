@@ -111,10 +111,6 @@ expression.mtrx.filtered <- geneFilter(expression.mtrx)
 # select only genes with differential expression (genotype effect or temperature effect or GxE)
 expression.mtrx.filtered <- expression.mtrx.filtered[, gene_cat$genes[which(gene_cat$genes %in% colnames(expression.mtrx.filtered))]]
 rownames(expression.mtrx.filtered) <- pull(expression, sample)
-
-expression.filtered <- expression %>%
-  dplyr::select(-matches('AT.G.{5}')) %>%
-  add_column(., as_tibble(expression.mtrx.filtered))
 ```
 
 ```{r PCA on subset of genes}
