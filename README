@@ -1,0 +1,19 @@
+## 8accessions
+This folder contains processed data and results from the RNA-sequencing data that were obtained for 8 accessions in two temperatures (16ºC and 6ºC)
+detailed information can be found in the eLabJournal
+https://vbc.elabjournal.com/members/experiments/browser/#view=experiment&nodeID=228236
+
+raw data locations and sequencing IDs can be found in
+general_data/samples.txt
+
+### general_data
+This folder contains general data that is used in different analysis.
+e.g. sample descriptions
+
+### coExpression
+co-expression analysis
+in colaboration with Sonia Celestini
+
+### transcript_quantification
+quantifying transcripts from the raw RNA-sequencing data
+
