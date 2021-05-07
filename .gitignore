@@ -1,0 +1,17 @@
+# gitignore for 001.8accessions
+
+# ignore all log files
+**/logs
+*.log
+
+# ignore all data files
+*.csv
+*.txt
+
+# ignore all figures
+*.pdf
+*.png
+
+# ignore quasimapping results
+001.transcript_quantification/quasiMapping
+
