@@ -1,0 +1,6 @@
+## transcript_quantification
+quantofying transcripts from teh raw RNA-sequencing data
+
+### quasimapping
+results from the quasimapping raw reads with salmon (https://combine-lab.github.io/salmon/)
+
