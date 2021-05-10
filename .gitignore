@@ -15,4 +15,7 @@
 # ignore quasimapping results
 001.transcript_quantification/quasiMapping
 
+# R specific files
 .Rproj.user
+.Rhistory
+
