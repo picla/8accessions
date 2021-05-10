@@ -11,6 +11,7 @@ library(WGCNA)
 library(tximport)
 library(DESeq2)
 library(biomaRt)
+library(doParallel)
 ```
 
 ```{r data}
@@ -26,6 +27,10 @@ gene_cat <- read_delim('/groups/nordborg/user/pieter.clauw/Documents/Experiments
 
 # output directory
 out.dir <- '/groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/003.coExpression/003.results/'
+
+# specify temperatures
+temperatures <- c('16C', '6C')
+
 ```
 ```{r functions}
 # filter genes with too many missing data and/or zero variance
@@ -36,9 +41,9 @@ geneFilter <- function(exprData)
   {
     # Optionally, print the gene and sample names that were removed:
     if (sum(!gsg$goodGenes)>0)
-    {printFlush(paste("Removing genes:", paste(names(expr6C)[!gsg$goodGenes], collapse = ", ")))}
+    {printFlush(paste("Removing genes:", paste(names(exprData)[!gsg$goodGenes], collapse = ", ")))}
     if (sum(!gsg$goodSamples)>0)
-    {printFlush(paste("Removing samples:", paste(rownames(expr6C)[!gsg$goodSamples], collapse = ", ")))}
+    {printFlush(paste("Removing samples:", paste(rownames(exprData)[!gsg$goodSamples], collapse = ", ")))}
     # Remove the offending genes and samples from the data:
     return(exprData[gsg$goodSamples, gsg$goodGenes])
   }
@@ -72,3 +77,80 @@ plotSoftThresholdChoices <- function(exprData, minSofthThreshold = 12, maxSoftTh
   text(sft$fitIndices[,1], sft$fitIndices[,5], labels=powers, cex=cex1,col="red")
 }
 ```
+
+```{r split both temperatures}
+expression.lst <- map(temperatures, function(temp){
+  expression %>%
+    filter(temperature == !!temp)})  %>%
+  set_names(temperatures)
+
+```
+
+## Network for each temperature
+```{r filter genes}
+expression.mtrx <- map(temperatures, function(temp){
+  expression.lst[[temp]] %>%
+    dplyr::select(matches('AT.G.{5}')) %>%
+    as.matrix()}) %>%
+  set_names(temperatures)
+
+# gene filtering
+expression.mtrx.filtered <- map(temperatures, function(temp){
+  # filter out genes with expression data for less than 1/2 samples
+  # and filter out genes with variance == 0
+  filt <- geneFilter(expression.mtrx[[temp]])
+  
+  # select only genes with differential expression (genotype effect or temperature effect or GxE)
+  filt <- filt[, gene_cat$genes[which(gene_cat$genes %in% colnames(filt))]]
+  rownames(filt) <- pull(expression.lst[[temp]], sample)
+  return(filt)
+  
+}) %>%
+  set_names(temperatures)
+```
+```{r PCA on subset of genes}
+map(temperatures, function(temp){
+  pcaData<- prcomp(expression.mtrx.filtered[[temp]])
+  percentage <- round(pcaData$sdev / sum(pcaData$sdev) * 100, 2)
+  percentage <- paste(colnames(pcaData$x), "(", paste( as.character(percentage), "%", ")", sep="") )
+  
+  as_tibble(pcaData$x, rownames = 'sample') %>%
+    left_join(., dplyr::select(expression.lst[[temp]], sample, accession, temperature, replicate), by = 'sample') %>%
+    ggplot(aes(PC1, PC2, color = accession, shape = replicate)) +
+    geom_point(size = 3) +
+    labs(x = percentage[1],
+         y = percentage[2],
+         title = temp)
+})
+
+```
+
+```{r make list framework for WGCNA analysis}
+wgcna.data <- list()
+for (temp in temperatures){
+ wgcna.data[[temp]][['expression']] <- expression.mtrx.filtered[[temp]] 
+}
+```
+
+```{r test soft threshold}
+
+#TODO: try this
+registerDoParallel()
+softthrsholdTest <- map(temperatures, function(temp){
+  return(plotSoftThresholdChoices(wgcna.data[[temp]]$expression, maxSoftThreshold = 20))  
+})
+
+for(temp in temperatures){
+  plotSoftThresholdChoices(wgcna.data[[temp]]$expression, maxSoftThreshold = 20)
+}
+
+
+```
+
+
+
+
+
+
+
+
