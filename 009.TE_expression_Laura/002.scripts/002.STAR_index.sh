@@ -16,10 +16,10 @@ ml star/2.7.1a-foss-2018b
 mainDir=/scratch-cbe/users/pieter.clauw/003.transcriptome/001.8accessions/009.TE_expression_Laura
 
 # stage in
-cp -v /groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/009.TE_expression_Laura/001.data/Ath_RepBase_TEs.fasta ${mainDir}/001.data/001.TE_STAR_index
+cp -v /groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/009.TE_expression_Laura/001.data/Ath_RepBase_TEs.fasta ${mainDir}/001.data/
 
-FASTA=${mainDir}/001.data/001.TE_STAR_index/Ath_RepBase_TEs.fasta
-Indices=${FASTA/.fasta/_STAR_idx/}
+FASTA=${mainDir}/001.data/Ath_RepBase_TEs.fasta
+Indices=${mainDir}/001.data/001.TE_STAR_index
 
 # PARAMETERS #
 cores=4
@@ -36,7 +36,7 @@ STAR \
 --genomeFastaFiles $FASTA
 
 # stage out
-cp -rv $Indices /groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/009.TE_expression_Laura/001.data/001.TE_STAR_index/
+cp -rv $Indices /groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/009.TE_expression_Laura/001.data/
 
 
 
