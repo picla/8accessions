@@ -16,7 +16,6 @@ ml samtools/1.10-foss-2018b
 # DATA #
 i=$SLURM_ARRAY_TASK_ID
 DATAdir=/scratch-cbe/users/pieter.clauw/003.transcriptome/001.8accessions/000.general_data/001.data
-# ls ${DATAdir}/001.bamfiles/*.bam > $BAMlst
 BAMlst=${DATAdir}/001.bamfiles/bam_list.txt
 FASTQdir=${DATAdir}/002.fastqfiles
 
