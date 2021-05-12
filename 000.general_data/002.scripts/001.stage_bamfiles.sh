@@ -11,8 +11,13 @@ SAMPLES=/groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.
 BAMFILES=($(awk 'NR>1 {if($11 == "yes"){print $10}}' $SAMPLES))
 
 TARGET=/scratch-cbe/users/pieter.clauw/003.transcriptome/001.8accessions/000.general_data/001.data/001.bamfiles/
+BAMlst=${TARGET}bam_list.txt
 mkdir -p $TARGET
 
 for BAM in ${BAMFILES[@]}; do
     cp -v $BAM $TARGET
 done
+
+# create list of all bamfiles
+ ls ${TARGET}*.bam > $BAMlst
+
