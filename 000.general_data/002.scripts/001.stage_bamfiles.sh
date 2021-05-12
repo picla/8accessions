@@ -19,5 +19,5 @@ for BAM in ${BAMFILES[@]}; do
 done
 
 # create list of all bamfiles
- ls ${TARGET}*.bam > $BAMlst
+ls ${TARGET}*.bam > $BAMlst
 
