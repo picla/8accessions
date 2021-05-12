@@ -3,7 +3,7 @@
 # ignore all log files
 **/logs
 *.log
-Log.out
+*.out
 
 # ignore all data files
 009.TE_expression_Laura/001.data/**
@@ -11,6 +11,7 @@ Log.out
 *.csv
 *.txt
 *.fasta
+*.fastq
 
 # ignore all figures
 *.pdf
