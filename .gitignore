@@ -12,6 +12,7 @@
 *.txt
 *.fasta
 *.fastq
+**/001.data/*
 
 # ignore all figures
 *.pdf
