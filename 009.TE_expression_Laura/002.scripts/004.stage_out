@@ -1,2 +1,3 @@
 
+mkdir /groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/009.TE_expression_Laura/001.data/002.TE_STAR_BAM/
 stage /scratch-cbe/users/pieter.clauw/003.transcriptome/001.8accessions/009.TE_expression_Laura/001.data/002.TE_STAR_BAM/ /groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/009.TE_expression_Laura/001.data/002.TE_STAR_BAM/
