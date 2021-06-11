@@ -8,7 +8,7 @@
 
 
 # MODULES #
-ml Python/3.6.4-foss-2018a
+ml python/3.8.6-gcccore-10.2.0
 # copy script from /projects/cegs/6vs16/Scripts/make_pseudogenome_fasta.py
 PSEUDOGENIZE=${WORK}Transcriptome/6vs16/Scripts/make_pseudogenome_fasta.py 
 
