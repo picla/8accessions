@@ -28,9 +28,3 @@ python $PSEUDOGENIZE -O $OUT $FASTA $VCF
 # add Chr as prefix for chromosome names
 awk '/>[0-9]/{gsub(/>/,">Chr")}{print}' $OUT > ${OUT}.tmp
 mv ${OUT}.tmp $OUT
-
-
-
-
-
-
