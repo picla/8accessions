@@ -8,10 +8,6 @@
 
 ml vcftools/0.1.16-foss-2018b-perl-5.28.0
 
-# PREPARE #
-# copy VCF
-# cp -up /groups/nordborg/projects/the1001genomes/release/VCFs/1001genomes_snp-short-indel_only_ACGTN.vcf.gz
-
 # DATA #
 i=$SLURM_ARRAY_TASK_ID
 WORK=/scratch-cbe/users/pieter.clauw/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/001.transcript_quantification/
