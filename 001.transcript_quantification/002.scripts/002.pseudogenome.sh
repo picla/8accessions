@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # SLURM
-#SBATCH --output=999.logs/pseudotranscriptome_%A_%a.log
+#SBATCH --output=999.logs/pseudogenome_%A_%a.log
 #SBATCH --time=01:00:00
 #SBATCH --mem=10GB
 #SBATCH --array=0-6
