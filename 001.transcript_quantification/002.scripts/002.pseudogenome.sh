@@ -2,7 +2,7 @@
 
 # SLURM
 #SBATCH --output=999.logs/pseudotranscriptome_%A_%a.log
-#SBATCH --time=12:00:00
+#SBATCH --time=06:00:00
 #SBATCH --mem=10GB
 #SBATCH --array=0-6
 
