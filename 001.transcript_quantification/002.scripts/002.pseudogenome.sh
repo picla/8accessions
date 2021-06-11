@@ -13,9 +13,11 @@ ml python/3.8.6-gcccore-10.2.0
 PSEUDOGENIZE=002.scripts/002.pseudogenome.py
 
 # DATA #
-i=$PBS_ARRAY_INDEX
-mainDir=${WORK}Transcriptome/6vs16/Data/Genome/
-FASTA=${mainDir}TAIR10_genome.fasta
+i=$SLURM_ARRAY_TASK_ID
+WORK=/scratch-cbe/users/pieter.clauw/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/001.transcript_quantification/
+FASTA=${WORK}001.data/TAIR10_chr_all.fas
+
+
 VCFlst=${mainDir}vcf_for_pseudoGenome.txt
 VCF=${mainDir}$(sed -n ${i}p $VCFlst)
 OUT=${VCF/intersection/pseudoTAIR10}
