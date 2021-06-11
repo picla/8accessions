@@ -1,0 +1,184 @@
+---
+title: "005.count_reads"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(stringsAsFactors = F)
+library(Rsubread)
+library(tidyverse)
+library(Biostrings)
+library(edgeR)
+library(limma)
+```
+
+After aliging reads to the consensus TE sequences with 003.STAR_map.sh
+The expression of the TEs needs to be estimated by counting the reads that align to each TE sequence.
+For this we'll use featureCounts as implemented in the Rsubread package.
+Details on how to use featureCounts: http://bioinf.wehi.edu.au/subread-package/SubreadUsersGuide.pdf
+
+```{r data}
+
+TEs <- readDNAStringSet('/groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/009.TE_expression_Laura/001.data/001.TE_STAR_index/Ath_RepBase_TEs.fasta', format = 'fasta')
+samples <- read_delim('/groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/000.general_data/001.data/samples.txt', delim = '\t') %>%
+  mutate(accession = as.factor(accession))
+```
+
+```{r get all sam files}
+STAR.dirs <- list.dirs(path = '/scratch-cbe/users/pieter.clauw/003.transcriptome/001.8accessions/009.TE_expression_Laura/001.data/002.TE_STAR_BAM')
+
+sam.files <- list.files(path = STAR.dirs, pattern = 'Aligned.out.sam', full.names = T)
+names(sam.files) <- basename(STAR.dirs)[-1]
+```
+
+
+```{r TE annotation file}
+# format should be GTF or SAF
+# generate custom SAF
+# GeneID	Chr	Start	End	Strand
+SAF <- tibble(GeneID = names(TEs), Chr = names(TEs), Start = 0, End = NA, Strand = '.')
+
+SAF$End <- map_dbl(SAF$GeneID, function(TE){
+  end <- length(TEs[[TE]])
+  return(end)
+})
+```
+
+
+```{r count}
+TE.counts <- featureCounts(sam.files, annot.ext = SAF, isPairedEnd = T)
+```
+
+```{r process count table}
+colnames(TE.counts$counts) <- names(sam.files)
+TE.expression <- as_tibble(TE.counts$counts, rownames = 'TE') %>%
+  pivot_longer(names_to = 'basename', values_to = 'counts', cols = -TE) %>%
+  left_join(., dplyr::select(samples, sample, basename, accession, temperature, replicate), by = 'basename') %>%
+  pivot_wider(id_cols = c(basename, sample, accession, temperature, replicate), names_from = TE, values_from = counts)
+```
+
+
+
+```{r how many TEs for how many accessions}
+TE.expression.presence <- TE.expression %>%
+  pivot_longer(cols = -c(basename, sample, accession, temperature, replicate), names_to = 'TE', values_to = 'count') %>%
+  filter(count > 0)
+
+table(TE.expression.presence$accession, TE.expression.presence$temperature, TE.expression.presence$replicate)
+```
+
+```{r count correlations}
+TE.expression %>%
+  pivot_longer(cols = -c(basename, sample, accession, temperature, replicate), names_to = 'TE', values_to = 'count') %>%
+  pivot_wider(id_cols = c(accession, replicate, TE), values_from = count, names_from = temperature, names_prefix = 'temp.') %>%
+  ggplot(aes(x = log2(temp.16C), y = log2(temp.6C))) +
+  geom_point(aes(color = as.factor(accession), shape = replicate)) +
+  geom_abline(intercept = 0, slope = 1)
+
+```
+
+
+```{r make DGElist}
+TE.DGElst <- DGEList(counts = TE.counts$counts, samples = filter(samples, basename %in% colnames(TE.counts$counts)))
+```
+
+```{r normalise}
+TE.DGElst <- calcNormFactors(TE.DGElst, method = "TMM")
+```
+
+```{r plot MDS}
+library(RColorBrewer)
+lcpm <- cpm(TE.DGElst, log = T)
+
+
+col.temperature <- as.factor(TE.DGElst$samples$temperature)
+levels(col.temperature) <-  brewer.pal(nlevels(col.temperature), "Set1")
+col.temperature <- as.character(col.temperature)
+col.accession <- as.factor(TE.DGElst$samples$accession)
+levels(col.accession) <-  brewer.pal(nlevels(col.accession), "Set2")
+col.accession <- as.character(col.accession)
+
+col.replicate <- as.factor(TE.DGElst$samples$replicate)
+levels(col.replicate) <-  brewer.pal(nlevels(col.replicate), "Set1")
+col.replicate <- as.character(col.replicate)
+
+
+
+
+
+
+plotMDS(lcpm, labels=as.character(TE.DGElst$samples$sample), col=col.temperature, dim = c(1,2))
+
+```
+
+```{r 16Cvs6C over all accessions}
+design.temp <- model.matrix(~ 0 + temperature + replicate, data = TE.DGElst$samples)
+
+contr.matrix <- makeContrasts(
+   temp16Vstemp6 = temperature16C - temperature6C, 
+   levels = colnames(design.temp))
+contr.matrix
+
+v <- voom(TE.DGElst, design.temp, plot = T)
+vfit <- lmFit(v, design.temp)
+vfit <- contrasts.fit(vfit, contrasts=contr.matrix)
+efit <- eBayes(vfit)
+plotSA(efit, main="Final model: Mean-variance trend")
+summary(decideTests(efit))
+```
+
+```{r 16Cvs6C Col-0}
+TE.DGElst.Col <- TE.DGElst[, which(TE.DGElst$samples$accession == 6909)]
+
+design.temp <- model.matrix(~ 0 + temperature + replicate, data = TE.DGElst.Col$samples)
+
+contr.matrix <- makeContrasts(
+   temp16Vstemp6 = temperature6C - temperature16C, 
+   levels = colnames(design.temp))
+contr.matrix
+
+v <- voom(TE.DGElst.Col, design.temp, plot = T)
+vfit <- lmFit(v, design.temp)
+vfit <- contrasts.fit(vfit, contrasts=contr.matrix)
+efit <- eBayes(vfit)
+plotSA(efit, main="Final model: Mean-variance trend")
+summary(decideTests(efit))
+
+
+tfit <- treat(vfit, lfc=0.01)
+dt <- decideTests(tfit)
+summary(dt)
+plotMD(tfit, column=1, status=dt[,1], main=colnames(tfit)[1])
+topTreat(tfit, coef=1, n=Inf)
+```
+```{r accession specific}
+map(unique(samples$accession), function(accession){
+  
+
+TE.DGElst.acn <- TE.DGElst[, which(TE.DGElst$samples$accession == accession)]
+
+design.temp <- model.matrix(~ 0 + temperature + replicate, data = TE.DGElst.acn$samples)
+
+contr.matrix <- makeContrasts(
+   temp16Vstemp6 = temperature6C - temperature16C, 
+   levels = colnames(design.temp))
+contr.matrix
+
+v <- voom(TE.DGElst.acn, design.temp, plot = T)
+vfit <- lmFit(v, design.temp)
+vfit <- contrasts.fit(vfit, contrasts=contr.matrix)
+efit <- eBayes(vfit)
+plotSA(efit, main="Final model: Mean-variance trend")
+summary(decideTests(efit))
+
+
+tfit <- treat(vfit, lfc=0.01)
+dt <- decideTests(tfit)
+summary(dt)
+plotMD(tfit, column=1, status=dt[,1], main=colnames(tfit)[1])
+topTreat(tfit, coef=1, n=Inf)
+
+})
+```
+
