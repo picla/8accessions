@@ -10,9 +10,7 @@
 # MODULES #
 ml python/3.8.6-gcccore-10.2.0
 
-PSEUDOGENIZE=
-
-${WORK}Transcriptome/6vs16/Scripts/make_pseudogenome_fasta.py 
+PSEUDOGENIZE=002.scripts/002.pseudogenome.py
 
 # DATA #
 i=$PBS_ARRAY_INDEX
