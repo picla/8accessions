@@ -1,0 +1,70 @@
+---
+title: "002.8accessions_growth_metabolome_profile"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(stringsAsFactors = F)
+```
+
+```{r data}
+# RNA-seq samples
+
+
+samples <- read_delim('/groups/nordborg/projects/cegs/16Vs6C/Data/Transcriptome/RawData/samples.txt', delim = '\t')
+
+```
+
+
+
+```{r growth behaviour of 8 RNA-seq accessions}
+# select accessions
+accessions.rna <- unique(samples$accession)
+# correlate each growth parameter to bio_11
+growth.bio11.rnaSeqAcns.lst <- map(c('M0', 'r', 'beta'), function(pheno){
+  growth %>%
+    dplyr::select(accession, temperature,!!pheno) %>%
+    mutate(accession = as.factor(accession)) %>%
+    left_join(., dplyr::select(worldclim, accession, bio_11), by = 'accession') %>%
+    mutate(rna.seq = ifelse(accession %in% accessions.rna, 'rna-seq', 'no rna-seq')) %>%
+    ggplot(aes_string(x = 'bio_11', y = pheno, color = 'temperature')) +
+    geom_point(aes(alpha = rna.seq)) +
+    theme_classic() +
+    labs(x = 'mean temperature of coldest quarter (ºC)',
+         y = str_replace_all(pheno, c('M0' = 'initial size', 'r' = 'overall growth rate')))
+})
+
+growth.bio11.rnaSeqAcns <- ggarrange(plotlist = growth.bio11.rnaSeqAcns.lst, common.legend = T, legend = 'bottom')
+
+ggsave('/groups/nordborg/user/pieter.clauw/Documents/Experiments/UltimateQandD/Results/Transcriptome/Plots/rnaSeq_samples_growth.pdf', plot = growth.bio11.rnaSeqAcns, width = 14)
+```
+```{r metabolic behaviour of 8 RNA-seq accessions}
+# select accessions
+accessions.rna <- unique(samples$accession)
+# correlate metabolic distance to bio_11
+metabolDist.bio11.rnaSeqAcns <- metabolDist %>%
+  mutate(accession = as.factor(accession),
+         rna.seq = ifelse(accession %in% accessions.rna, 'rna-seq', 'no rna-seq')) %>%
+  left_join(., dplyr::select(worldclim, accession, bio_11), by = 'accession') %>%
+  ggplot(aes(x = bio_11, y = distance)) +
+  geom_point(aes(alpha = rna.seq)) +
+  theme_classic() +
+  labs(x = 'mean temperature of coldest quarter (ºC)',
+       y = 'metabolic distance')
+
+ggsave('/groups/nordborg/user/pieter.clauw/Documents/Experiments/UltimateQandD/Results/Transcriptome/Plots/rnaSeq_samples_metabolicDistance.pdf', plot = metabolDist.bio11.rnaSeqAcns)
+```
+```{r combined}
+
+growth.metaboDist.bio11.rnaSeqAcns <- ggarrange(growth.bio11.rnaSeqAcns.lst[[1]],
+          growth.bio11.rnaSeqAcns.lst[[2]],
+          growth.bio11.rnaSeqAcns.lst[[3]],
+          metabolDist.bio11.rnaSeqAcns,
+          common.legend = T,
+          legend = 'bottom',
+          labels = 'AUTO')
+
+ggsave('/groups/nordborg/user/pieter.clauw/Documents/Experiments/UltimateQandD/Results/Transcriptome/Plots/rnaSeq_samples_growth_metabolicDistance.pdf', plot = growth.metaboDist.bio11.rnaSeqAcns, width = 10.5, height = 10.5)
+
+```
