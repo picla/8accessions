@@ -14,7 +14,7 @@ ml salmon/1.2.1-foss-2018b
 i=$SLURM_ARRAY_TASK_ID
 WORK=/scratch-cbe/users/pieter.clauw/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/001.transcript_quantification/
 SAMPLES=/groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/000.general_data/001.data/samples.txt
-FASTQdir=/groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/000.general_data/001.data/001.fastq_trimmed/
+FASTQdir=/scratch-cbe/users/pieter.clauw/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/000.general_data/001.data/001.fastq_trimmed/
 RESULTSdir=${WORK}003.results/001.quantification_salmon/
 
 # Select accessions and index
