@@ -20,5 +20,5 @@ mv ${TAIR10}.tmp $TAIR10
 cp -up /groups/nordborg/user/pieter.clauw/Documents/Source/Araport11/Araport11_GFF3_genes_transposons.201606.gtf /scratch-cbe/users/pieter.clauw/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/001.transcript_quantification/001.data/
 
 # copy fastq files to scratch
-stage
+stage /groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/000.general_data/001.data/001.fastq_trimmed/ /scratch-cbe/users/pieter.clauw/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/000.general_data/001.data/001.fastq_trimmed/
 
