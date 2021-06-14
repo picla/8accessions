@@ -5,7 +5,7 @@
 #SBATCH --time=01:00:00
 #SBATCH --mem=20GB
 #SBATCH --cpus-per-task=4
-#SBATCH --array=1-52
+#SBATCH --array=1-48
 
 # MODULES #
 ml salmon/1.2.1-foss-2018b
@@ -18,8 +18,8 @@ FASTQdir=/groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001
 RESULTSdir=${WORK}003.results/001.quantification_salmon/
 
 # Select accessions and index
-BASE=$(awk '$6 == "ok" {print $5}' $SAMPLES | sed -n ${i}p)
-ACN=$(awk '$6 == "ok" {print $2}' $SAMPLES | sed -n ${i}p)
+BASE=$(awk '$11 == "yes" {print $5}' $SAMPLES | sed -n ${i}p)
+ACN=$(awk '$11 == "yes" {print $2}' $SAMPLES | sed -n ${i}p)
 OUTdir=${RESULTSdir}${BASE}_quantification_salmon/
 #sample=$(echo $base | grep -o -E '[0-9]{5}_')
 #sample=${sample%'_'}
