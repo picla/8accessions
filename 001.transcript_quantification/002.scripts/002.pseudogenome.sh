@@ -17,10 +17,11 @@ i=$SLURM_ARRAY_TASK_ID
 WORK=/scratch-cbe/users/pieter.clauw/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/001.transcript_quantification/
 FASTA=${WORK}001.data/TAIR10_chr_all.fas
 
-VCFfiles=(${WORK}001.data/1001genomes_snp-short-indel_only_ACGTN_*.vcf)
+VCFfiles=(${WORK}001.data/001.vcf/1001genomes_snp-short-indel_only_ACGTN_*.vcf)
 VCF=${VCFfiles[$i]}
 
 OUT=${VCF/.vcf/_pseudoTAIR10.fasta}
+
 
 # MAKE PSEUDO GENOMES #
 python $PSEUDOGENIZE -O $OUT $FASTA $VCF
@@ -28,3 +29,6 @@ python $PSEUDOGENIZE -O $OUT $FASTA $VCF
 # add Chr as prefix for chromosome names
 awk '/>./{gsub(/>/,">Chr")}{print}' $OUT > ${OUT}.tmp
 mv ${OUT}.tmp $OUT
+
+# move pseudogenomes to separate folder
+mv $OUT ${WORK}001.data/002.pseudogenomes/
