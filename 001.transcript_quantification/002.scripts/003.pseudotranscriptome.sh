@@ -19,11 +19,10 @@ if [ $acn = 6909 ]
 then
     GENOME=${WORK}001.data/TAIR10_chr_all.fas
 else
-    GENOME=${WORK}001.data/1001genomes_snp-short-indel_only_ACGTN_${acn}_pseudoTAIR10.fasta
+    GENOME=${WORK}001.data/002.pseudogenomes/1001genomes_snp-short-indel_only_ACGTN_${acn}_pseudoTAIR10.fasta
 fi
 
-TRANSCRIPTOME=${WORK}001.data/pseudotranscriptome_${acn}.fasta
-
+TRANSCRIPTOME=${WORK}001.data/003.pseudotranscriptomes/pseudotranscriptome_${acn}.fasta
 
 # MAKE PSEUDO TRANSCRIPTOME
 ml samtools/1.10-foss-2018b
