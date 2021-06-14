@@ -18,8 +18,8 @@ WORK=/scratch-cbe/users/pieter.clauw/cold_adaptation_16Cvs6C/003.transcriptome/0
 accessions=(6909 6017 9728 9559 8242 9888 9433 9075)
 acn=${accessions[$i]}
 
-TRANSCRIPT=${WORK}001.data/pseudotranscriptome_${acn}.fasta
-INDEX=${WORK}001.data/salmonIndex_${acn}
+TRANSCRIPT=${WORK}001.data/003.pseudotranscriptomes/pseudotranscriptome_${acn}.fasta
+INDEX=${WORK}001.data/004.indices/salmonIndex_${acn}
 
 echo for accession $acn we are using transcriptome from: $TRANSCRIPT
 
