@@ -6,14 +6,36 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 options(stringsAsFactors = F)
+library(tidyverse)
+library(ggpubr)
 ```
 
 ```{r data}
 # RNA-seq samples
+samples <- read_delim('/groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/000.general_data/001.data/samples.txt', delim = '\t')
 
+# growth phenotypes
+growth <- read_csv('/groups/nordborg/projects/cold_adaptation_16Cvs6C/002.growth/002.nonlinear_growthParameters/003.results/002.nonlinear_bayesian/001.power_law/powerLaw_phenotypes.csv') %>%
+  mutate(accession = as.factor(accession))
 
-samples <- read_delim('/groups/nordborg/projects/cegs/16Vs6C/Data/Transcriptome/RawData/samples.txt', delim = '\t')
+# metabolic distances
+metabolDist <- read_csv('/groups/nordborg/projects/cold_adaptation_16Cvs6C/004.metabolome/000.general_data/001.data/metabolic_distance.csv') %>%
+  mutate(accession = as.factor(accession)) %>%
+  select(accession, distance)
 
+# worldclim data
+worldclim <- read_csv('/groups/nordborg/user/pieter.clauw/Documents/Source/Accessions/2029_modified_MN_SH_wc2.0_30s_bilinear.csv') %>%
+  mutate(accession = as.factor(accession))
+
+```
+
+```{r filter samples}
+# filter only sequenced samples
+samples <- filter(samples, Selected == 'yes') %>%
+  mutate(temperature = as.factor(temperature),
+         replicate = as.factor(replicate),
+         experiment = as.factor(paste(temperature, replicate, sep = '_'))) %>%
+  mutate(accession = as.factor(accession))
 ```
 
 
@@ -24,8 +46,9 @@ accessions.rna <- unique(samples$accession)
 # correlate each growth parameter to bio_11
 growth.bio11.rnaSeqAcns.lst <- map(c('M0', 'r', 'beta'), function(pheno){
   growth %>%
-    dplyr::select(accession, temperature,!!pheno) %>%
-    mutate(accession = as.factor(accession)) %>%
+    dplyr::select(accession, starts_with(paste0(pheno, '_'))) %>%
+    pivot_longer(contains(pheno), names_to = 'temperature', names_prefix = paste0(pheno, '_'), values_to = pheno) %>%
+    filter(temperature != 'response') %>%
     left_join(., dplyr::select(worldclim, accession, bio_11), by = 'accession') %>%
     mutate(rna.seq = ifelse(accession %in% accessions.rna, 'rna-seq', 'no rna-seq')) %>%
     ggplot(aes_string(x = 'bio_11', y = pheno, color = 'temperature')) +
@@ -37,15 +60,14 @@ growth.bio11.rnaSeqAcns.lst <- map(c('M0', 'r', 'beta'), function(pheno){
 
 growth.bio11.rnaSeqAcns <- ggarrange(plotlist = growth.bio11.rnaSeqAcns.lst, common.legend = T, legend = 'bottom')
 
-ggsave('/groups/nordborg/user/pieter.clauw/Documents/Experiments/UltimateQandD/Results/Transcriptome/Plots/rnaSeq_samples_growth.pdf', plot = growth.bio11.rnaSeqAcns, width = 14)
+ggsave('/groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/004.cold_acclimation_gene_expression/004.plots/rnaSeq_samples_growth.pdf', plot = growth.bio11.rnaSeqAcns, width = 14)
 ```
 ```{r metabolic behaviour of 8 RNA-seq accessions}
 # select accessions
 accessions.rna <- unique(samples$accession)
 # correlate metabolic distance to bio_11
 metabolDist.bio11.rnaSeqAcns <- metabolDist %>%
-  mutate(accession = as.factor(accession),
-         rna.seq = ifelse(accession %in% accessions.rna, 'rna-seq', 'no rna-seq')) %>%
+  mutate(rna.seq = ifelse(accession %in% accessions.rna, 'rna-seq', 'no rna-seq')) %>%
   left_join(., dplyr::select(worldclim, accession, bio_11), by = 'accession') %>%
   ggplot(aes(x = bio_11, y = distance)) +
   geom_point(aes(alpha = rna.seq)) +
@@ -53,7 +75,7 @@ metabolDist.bio11.rnaSeqAcns <- metabolDist %>%
   labs(x = 'mean temperature of coldest quarter (ºC)',
        y = 'metabolic distance')
 
-ggsave('/groups/nordborg/user/pieter.clauw/Documents/Experiments/UltimateQandD/Results/Transcriptome/Plots/rnaSeq_samples_metabolicDistance.pdf', plot = metabolDist.bio11.rnaSeqAcns)
+ggsave('/groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/004.cold_acclimation_gene_expression/004.plots/rnaSeq_samples_metabolicDistance.pdf', plot = metabolDist.bio11.rnaSeqAcns)
 ```
 ```{r combined}
 
@@ -65,6 +87,6 @@ growth.metaboDist.bio11.rnaSeqAcns <- ggarrange(growth.bio11.rnaSeqAcns.lst[[1]]
           legend = 'bottom',
           labels = 'AUTO')
 
-ggsave('/groups/nordborg/user/pieter.clauw/Documents/Experiments/UltimateQandD/Results/Transcriptome/Plots/rnaSeq_samples_growth_metabolicDistance.pdf', plot = growth.metaboDist.bio11.rnaSeqAcns, width = 10.5, height = 10.5)
+ggsave('/groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/004.cold_acclimation_gene_expression/004.plots/rnaSeq_samples_growth_metabolicDistance.pdf', plot = growth.metaboDist.bio11.rnaSeqAcns, width = 10.5, height = 10.5)
 
 ```
