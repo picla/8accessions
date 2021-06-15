@@ -2,7 +2,7 @@
 
 # SLURM
 #SBATCH --output=999.logs/quantification_salmon_%A_%a.log
-#SBATCH --time=01:00:00
+#SBATCH --time=02:00:00
 #SBATCH --mem=20GB
 #SBATCH --cpus-per-task=4
 #SBATCH --array=1-48
