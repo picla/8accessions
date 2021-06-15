@@ -14,6 +14,9 @@
 *.fastq
 **/001.data/*
 
+# ignore all results files
+**/003.results/*
+
 # ignore all figures
 *.pdf
 *.png
