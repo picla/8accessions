@@ -24,7 +24,7 @@ library(biomaRt)
 ensembl <- useMart(biomart="plants_mart", host="plants.ensembl.org", dataset="athaliana_eg_gene")
 
 # expression estimaes - variance stabilised
-expression <- read_csv('/groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/001.transcript_quantification/transcriptCounts_varianceStabilised.csv') %>%
+expression <- read_csv('/groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/001.transcript_quantification/003.results/transcriptCounts_varianceStabilised.csv') %>%
   mutate(accession = as.factor(accession))
 
 # gene categories Sonia
@@ -136,7 +136,7 @@ wgcna.data$expression <- expression.mtrx.filtered
 plotSoftThresholdChoices(wgcna.data$expression, maxSoftThreshold = 20)
 ```
 A soft threhsold of 8 was picked.
-This soft threshold has a scale free topology model fit above 0.8 and still a mean connectivity of 81.8
+This soft threshold has a scale free topology model fit close to  0.8 and still a mean connectivity of 82
 ```{r choose softThreshold}
 wgcna.data$softThreshold <- 8
 ```
@@ -202,7 +202,7 @@ sizeGrWindow(7, 6)
 plot(METree, main = "Clustering of module eigengenes", xlab = "", sub = "", cex=0.3)
 
   
-MEDissThres <- 0.20
+MEDissThres <- 0.10
 # Plot the cut line into the dendrogram
 abline(h=MEDissThres, col = "red")
 
@@ -247,5 +247,9 @@ exportNetworkToCytoscape(wgcna.data$TOM,
                          nodeNames = colnames(wgcna.data$expression),
                          altNodeNames = gene.names$external_gene_name,
                          nodeAttr = gene.attributes)
+```
+
+```{r save networks}
+save(wgcna.data, file = paste(out.dir, 'network_both_temperatures.Rda'))
 ```
 
