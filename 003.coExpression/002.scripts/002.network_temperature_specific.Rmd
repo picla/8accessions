@@ -107,6 +107,15 @@ expression.mtrx.filtered <- map(temperatures, function(temp){
   
 }) %>%
   set_names(temperatures)
+
+# take only genes present in both temperatures after filtering
+genes.intersect <- intersect(colnames(expression.mtrx.filtered[['16C']]), colnames(expression.mtrx.filtered[['6C']]))
+
+expression.mtrx.filtered <- map(temperatures, function(temp){
+  mtrx.temp <- expression.mtrx.filtered[[temp]][, genes.intersect]
+  return(mtrx.temp)
+}) %>%
+  set_names(temperatures)
 ```
 ```{r PCA on subset of genes}
 map(temperatures, function(temp){
@@ -133,19 +142,7 @@ for (temp in temperatures){
 ```
 
 ```{r test soft threshold 6ºC}
-#softthrsholdTest <- map(temperatures, function(temp){
-#  return(plotSoftThresholdChoices(wgcna.data[[temp]]$expression, maxSoftThreshold = 20))  
-#})
-
-
-
-#for(temp in temperatures){
-#  plotSoftThresholdChoices(wgcna.data[[temp]]$expression, maxSoftThreshold = 20)
-#}
-
-
 plotSoftThresholdChoices(wgcna.data[['6C']]$expression, maxSoftThreshold = 20)
-
 ```
 
 ```{r test soft threshold 16ºC}
