@@ -84,8 +84,10 @@ meanSdPlot(assay(dds.varStab))
 ```
 
 ```{r save variance stabilised counts}
-counts.varStab <- as_tibble(assay(dds.varStab), rownames = 'gene')
-write_csv(counts.varStab, '/groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/001.transcript_quantification/003.results/transcriptCounts_varianceStabilised.csv')
+as_tibble(t(assay(dds.varStab)), rownames = 'sample') %>%
+  left_join(dplyr::select(samples, sample, accession, temperature, replicate), by = 'sample') %>%
+  dplyr::select(accession, temperature, replicate, sample, everything()) %>%
+  write_csv('/groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/001.transcript_quantification/003.results/transcriptCounts_varianceStabilised.csv')
 
 ```
 
