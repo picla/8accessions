@@ -21,8 +21,6 @@ quant.dir <- '/groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptom
 
 # araport11 annotation
 araport11 <- read.table('/groups/nordborg/user/pieter.clauw/Documents/Source/Araport11/Araport11_GFF3_genes_transposons.201606.ChrM_ChrC_FullName.gtf', sep = '\t')
-
-
 ```
 
 ```{r filter samples}
