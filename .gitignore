@@ -17,6 +17,9 @@
 # ignore all results files
 **/003.results/*
 
+# ignore all data files
+**/001.data/*
+
 # ignore all figures
 *.pdf
 *.png
@@ -28,3 +31,6 @@
 .Rproj.user
 .Rhistory
 001.8accessions.Rproj
+
+# ignore .DS_Store
+.DS_Store
