@@ -31,10 +31,6 @@ worldclim <- read_csv('/groups/nordborg/user/pieter.clauw/Documents/Source/Acces
 CBF_UP.Park <- read_delim('/groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/004.cold_acclimation_gene_expression/001.data/CBF_regulon_UP_ParkEtAl2015.txt', delim = '\t', col_names = 'gene')
 CBF_DOWN.Park <- read_delim('/groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/004.cold_acclimation_gene_expression/001.data/CBF_regulon_DOWN_ParkEtAl2015.txt', delim = '\t', col_names = 'gene')
 
-#CBF_UP.Vogel <- read_csv('/groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/004.cold_acclimation_gene_expression/001.data/CBF2_upregulated_table7.csv')
-#CBF_DOWN.Vogel <- read_csv('/groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/004.cold_acclimation_gene_expression/001.data/CBF2_downregulated_table8.csv')
-
-
 # HSFC1 regulon according Park et al., 2015
 HSFC1 <- read_delim('/groups/nordborg/projects/cold_adaptation_16Cvs6C/003.transcriptome/001.8accessions/004.cold_acclimation_gene_expression/001.data/HSFC1_regulon_ParkEtAl2015.txt', delim = '\t', col_names = 'gene')
 
@@ -160,9 +156,9 @@ samples <- filter(samples, Selected == 'yes') %>%
 ```{r heatmap of CBF}
 # prepare data
 counts.varstab.CBF <- counts.varStab %>%
+  pivot_longer(contains('AT', ignore.case = F), names_to = 'gene', values_to = 'expression') %>%
+  mutate(accession = as.factor(accession)) %>%
   filter(gene %in% c(CBF_UP.Park$gene, CBF_DOWN.Park$gene, CBF.TF, ZAT12_DOWN$AGI, ZAT12_UP$AGI, HSFC1$gene)) %>%
-  pivot_longer(cols = !'gene', names_to = 'sample', values_to = 'expression') %>%
-  left_join(., samples[, c('sample', 'accession', 'temperature', 'replicate', 'sampleName')], by = 'sample') %>%
   dplyr::select(gene, sample, accession, temperature, expression) %>%
   group_by(accession, temperature, gene) %>%
   summarise(mean(expression), .groups = 'drop') %>%
